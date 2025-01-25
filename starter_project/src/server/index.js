@@ -1,5 +1,5 @@
 var path = require('path');
-const fetch = require('node-fetch');
+const axios = require('axios');
 const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
@@ -20,21 +20,28 @@ app.get('/', function (req, res) {
     res.send("This is the server API page, you may access its services via the client app.");
 });
 
-
 // POST Route
 app.post('/api', async (req, res) => {
-    const text = req.body.text;
     try {
-        // const response = await fetch(`https://api.meaningcloud.com/sentiment-2.1?key=${API_KEY}&of=json&txt=${text}&lang=en`);
-        // const data = await response.json();
-        // console.log(data);
+
+        const url = req.body.url;
+        const response = await axios.get(`https://api.meaningcloud.com/sentiment-2.1?key=${API_KEY}&of=json&url=${url}&lang=en`);
+        const { status } = response;
+        if (status.msg !== 'OK') {
+            return res.send({ ok: false, error: 'Could not access sentiment API' });
+        }
+
+        const { subjectivity, agreement, sentence_list } = response.data;
         res.send({
-            polarity: 'positive',
-            subjectivity: 'objective',
-            text: 'what ever',
+            ok: true,
+            data: {
+                polarity: agreement,
+                subjectivity,
+                snippet: sentence_list[0].text,
+            }
         });
     } catch (error) {
-        console.log("error", error);
+        res.send({ ok: false, error: error.message });
     }
 });
 
